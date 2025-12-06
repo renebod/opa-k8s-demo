@@ -10,7 +10,21 @@ metadata:
 
 ---
 # =====================================================================
-# 2. OPA ConfigMap
+# 2. TLS Secret
+#    Generate from local opa.local.pem and opa.local-key.pem:
+#    kubectl create secret tls opa-tls-secret --cert=opa.local.pem --key=opa.local-key.pem -n opa --dry-run=client -o yaml | kubectl apply -f -
+# =====================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opa-tls-secret
+  namespace: opa
+type: kubernetes.io/tls
+# TLS data is generated dynamically from local files, no base64 required
+
+---
+# =====================================================================
+# 3. OPA ConfigMap
 # =====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -28,7 +42,7 @@ data:
 
 ---
 # =====================================================================
-# 3. OPA Deployment
+# 4. OPA Deployment with readiness and liveness probes
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -47,7 +61,7 @@ spec:
     spec:
       containers:
         - name: opa
-          image: openpolicyagent/opa:latest
+          image: openpolicyagent/opa:v0.52.0
           args:
             - "run"
             - "--server"
@@ -57,6 +71,28 @@ spec:
           volumeMounts:
             - name: opa-config
               mountPath: /config
+          # =========================
+          # Readiness probe ensures Traefik routes only when OPA is ready
+          # =========================
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8181
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # =========================
+          # Liveness probe ensures pod restarts if OPA becomes unhealthy
+          # =========================
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8181
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
       volumes:
         - name: opa-config
           configMap:
@@ -64,7 +100,7 @@ spec:
 
 ---
 # =====================================================================
-# 4. OPA Service
+# 5. OPA Service
 # =====================================================================
 apiVersion: v1
 kind: Service
@@ -81,7 +117,7 @@ spec:
 
 ---
 # =====================================================================
-# 5. Kubernetes Ingress for Rancher Desktop Traefik
+# 6. Kubernetes Ingress for Rancher Desktop Traefik
 # =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
