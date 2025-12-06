@@ -62,10 +62,11 @@ spec:
     spec:
       containers:
         - name: opa
-          image: openpolicyagent/opa:v1.11.0
+          image: openpolicyagent/opa:latest
           args:
             - "run"
             - "--server"
+            - "--addr=0.0.0.0:8181"
             - "--config-file=/config/opa.yaml"
           ports:
             - containerPort: 8181
