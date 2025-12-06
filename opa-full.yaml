@@ -17,9 +17,12 @@ metadata:
 #      --key=opa.local-key.pem \
 #      -n opa
 # =====================================================================
-# Secret is referenced in the Ingress, Traefik will terminate TLS
+# DO NOT include data in YAML. Create dynamically from local files:
+# kubectl create secret tls opa-tls-secret \
+#   --cert=opa.local.pem \
+#   --key=opa.local-key.pem \
+#   -n opa
 # =====================================================================
-# (No data fields needed in YAML)
 
 ---
 # =====================================================================
@@ -41,7 +44,7 @@ data:
 
 ---
 # =====================================================================
-# 4. OPA Deployment with readiness and liveness probes
+# 4. OPA Deployment
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -70,18 +73,18 @@ spec:
           volumeMounts:
             - name: opa-config
               mountPath: /config
-          # =========================
+           # =========================
           # Readiness probe ensures Traefik only routes to ready pods
           # Adjusted for Rancher Desktop so pod is ready quickly
           # =========================
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8181
-            initialDelaySeconds: 1
-            periodSeconds: 2
-            timeoutSeconds: 1
-            failureThreshold: 3
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8181
+          #   initialDelaySeconds: 1
+          #   periodSeconds: 2
+          #   timeoutSeconds: 1
+          #   failureThreshold: 3
           # =========================
           # Liveness probe ensures OPA restarts if it becomes unhealthy
           # =========================
@@ -125,7 +128,7 @@ metadata:
   name: opa-ingress
   namespace: opa
 spec:
-  ingressClassName: traefik   # Modern way to select Traefik ingress controller
+  ingressClassName: traefik   # Required for Rancher Desktop built-in Traefik
   tls:
     - hosts:
         - opa.local
