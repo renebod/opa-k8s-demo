@@ -15,9 +15,8 @@ metadata:
 #    kubectl create secret tls opa-tls-secret \
 #      --cert=opa.local.pem \
 #      --key=opa.local-key.pem \
-#      -n opa
-# =====================================================================
-# DO NOT include data in YAML. Create dynamically from local files:
+#      -n opa# =====================================================================
+# Create manually from your local files:
 # kubectl create secret tls opa-tls-secret \
 #   --cert=opa.local.pem \
 #   --key=opa.local-key.pem \
@@ -63,7 +62,7 @@ spec:
     spec:
       containers:
         - name: opa
-          image: openpolicyagent/opa:v0.52.0
+          image: openpolicyagent/opa:v1.11.0
           args:
             - "run"
             - "--server"
@@ -71,23 +70,10 @@ spec:
           ports:
             - containerPort: 8181
           volumeMounts:
+            # Mount the ConfigMap to /config
             - name: opa-config
               mountPath: /config
-           # =========================
-          # Readiness probe ensures Traefik only routes to ready pods
-          # Adjusted for Rancher Desktop so pod is ready quickly
-          # =========================
-          # readinessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 8181
-          #   initialDelaySeconds: 1
-          #   periodSeconds: 2
-          #   timeoutSeconds: 1
-          #   failureThreshold: 3
-          # =========================
-          # Liveness probe ensures OPA restarts if it becomes unhealthy
-          # =========================
+
           livenessProbe:
             httpGet:
               path: /health
@@ -97,6 +83,7 @@ spec:
             timeoutSeconds: 2
             failureThreshold: 3
       volumes:
+        # Link the ConfigMap to the container
         - name: opa-config
           configMap:
             name: opa-config
@@ -120,7 +107,7 @@ spec:
 
 ---
 # =====================================================================
-# 6. Kubernetes Ingress for Rancher Desktop Traefik
+# 6. Kubernetes Ingress for Traefik
 # =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -128,7 +115,7 @@ metadata:
   name: opa-ingress
   namespace: opa
 spec:
-  ingressClassName: traefik   # Required for Rancher Desktop built-in Traefik
+  ingressClassName: traefik   # Matches Rancher Desktop built-in Traefik
   tls:
     - hosts:
         - opa.local
