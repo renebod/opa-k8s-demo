@@ -12,7 +12,7 @@ kubectl create namespace opa
 #   --dry-run=client -o yaml > opa-tls-secret.yaml
 
 kubectl apply -f opa-tls-secret.yaml
-# kubectl apply -f opa.yaml
+kubectl apply -f opa-full.yaml
 
 # kubectl logs deployment/opa -n opa
 
