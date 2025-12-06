@@ -1,5 +1,5 @@
 # =====================================================================
-# 1. Namespace for OPA
+# 1. Namespace
 # =====================================================================
 apiVersion: v1
 kind: Namespace
@@ -10,17 +10,16 @@ metadata:
 
 ---
 # =====================================================================
-# 2. TLS Secret
-#    Generate from local opa.local.pem and opa.local-key.pem:
-#    kubectl create secret tls opa-tls-secret --cert=opa.local.pem --key=opa.local-key.pem -n opa --dry-run=client -o yaml | kubectl apply -f -
+# 2. TLS Secret (create dynamically from local files)
+#    Do NOT include data in YAML. Create with:
+#    kubectl create secret tls opa-tls-secret \
+#      --cert=opa.local.pem \
+#      --key=opa.local-key.pem \
+#      -n opa
 # =====================================================================
-apiVersion: v1
-kind: Secret
-metadata:
-  name: opa-tls-secret
-  namespace: opa
-type: kubernetes.io/tls
-# TLS data is generated dynamically from local files, no base64 required
+# Secret is referenced in the Ingress, Traefik will terminate TLS
+# =====================================================================
+# (No data fields needed in YAML)
 
 ---
 # =====================================================================
@@ -72,25 +71,26 @@ spec:
             - name: opa-config
               mountPath: /config
           # =========================
-          # Readiness probe ensures Traefik routes only when OPA is ready
+          # Readiness probe ensures Traefik only routes to ready pods
+          # Adjusted for Rancher Desktop so pod is ready quickly
           # =========================
           readinessProbe:
             httpGet:
               path: /health
               port: 8181
-            initialDelaySeconds: 3
-            periodSeconds: 5
-            timeoutSeconds: 2
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            timeoutSeconds: 1
             failureThreshold: 3
           # =========================
-          # Liveness probe ensures pod restarts if OPA becomes unhealthy
+          # Liveness probe ensures OPA restarts if it becomes unhealthy
           # =========================
           livenessProbe:
             httpGet:
               path: /health
               port: 8181
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 5
+            periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
       volumes:
@@ -125,7 +125,7 @@ metadata:
   name: opa-ingress
   namespace: opa
 spec:
-  ingressClassName: traefik
+  ingressClassName: traefik   # Modern way to select Traefik ingress controller
   tls:
     - hosts:
         - opa.local
