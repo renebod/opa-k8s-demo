@@ -12,7 +12,6 @@ metadata:
 #    This secret contains your certificate and private key:
 #      - opa.local.pem       → tls.crt
 #      - opa.local-key.pem   → tls.key
-#    IMPORTANT: both must be base64-encoded before placing into this file
 # =====================================================================
 apiVersion: v1
 kind: Secret
@@ -26,7 +25,7 @@ data:
 
 ---
 # =====================================================================
-# 3. OPA configuration
+# 3. OPA ConfigMap
 #    This enables the standard OPA REST API + optional envoy authz port.
 #    Feel free to customize bundles, policies, etc.
 # =====================================================================
@@ -74,7 +73,7 @@ spec:
             - "--server"
             - "--config-file=/config/opa.yaml"
           ports:
-            - containerPort: 8181   # OPA REST API
+            - containerPort: 8181  # OPA REST API
           volumeMounts:
             - name: opa-config
               mountPath: /config
@@ -85,7 +84,7 @@ spec:
 
 ---
 # =====================================================================
-# 5. Service exposing OPA internally in the cluster
+# 5. OPA Service
 #    Traefik will route external HTTPS traffic to this service.
 # =====================================================================
 apiVersion: v1
@@ -103,7 +102,7 @@ spec:
 
 ---
 # =====================================================================
-# 6. Traefik IngressRoute (HTTPS)
+# 6. Kubernetes Ingress (for Rancher Desktop / built-in Traefik)
 #    - Uses Traefik CRDs (apiVersion: traefik.io/v1alpha1)
 #    - Binds to the websecure entrypoint (443)
 #    - Terminates TLS using the provided certificate
@@ -116,21 +115,26 @@ spec:
 #      - Traefik must be installed with CRDs
 #      - Your DNS or /etc/hosts must resolve opa.local
 # =====================================================================
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: opa-ingress
   namespace: opa
+  annotations:
+    kubernetes.io/ingress.class: "traefik"  # tells Traefik to manage this ingress
 spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`opa.local`)
-      kind: Rule
-      services:
-        - name: opa
-          port: 8181
   tls:
-    secretName: opa-tls-secret
-    domains:
-      - main: "opa.local"
+    - hosts:
+        - opa.local
+      secretName: opa-tls-secret
+  rules:
+    - host: opa.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opa
+                port:
+                  number: 8181
