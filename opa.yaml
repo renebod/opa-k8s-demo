@@ -5,29 +5,12 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: opa
+  labels:
+    app: opa
 
 ---
 # =====================================================================
-# 2. TLS Secret for Traefik HTTPS
-#    This secret contains your certificate and private key:
-#      - opa.local.pem       → tls.crt
-#      - opa.local-key.pem   → tls.key
-# =====================================================================
-apiVersion: v1
-kind: Secret
-metadata:
-  name: opa-tls-secret
-  namespace: opa
-type: kubernetes.io/tls
-data:
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVWakNDQXI2Z0F3SUJBZ0lSQUxtdVJsRDdEQXhhM3pUenc0MFFReVV3RFFZSktvWklodmNOQVFFTEJRQXcKZ1lNeEhqQWNCZ05WQkFvVEZXMXJZMlZ5ZENCa1pYWmxiRzl3YldWdWRDQkRRVEVzTUNvR0ExVUVDd3dqY21WdQpaV0p2WkVCTllXTkNiMjlyUVdseUxtaHZiV1VnS0ZKbGJzT3BJRUp2WkNreE16QXhCZ05WQkFNTUttMXJZMlZ5CmRDQnlaVzVsWW05a1FFMWhZMEp2YjJ0QmFYSXVhRzl0WlNBb1VtVnV3NmtnUW05a0tUQWVGdzB5TlRFeU1EUXgKT1RRMU1qQmFGdzB5T0RBek1EUXhPVFExTWpCYU1GY3hKekFsQmdOVkJBb1RIbTFyWTJWeWRDQmtaWFpsYkc5dwpiV1Z1ZENCalpYSjBhV1pwWTJGMFpURXNNQ29HQTFVRUN3d2pjbVZ1WldKdlpFQk5ZV05DYjI5clFXbHlMbWh2CmJXVWdLRkpsYnNPcElFSnZaQ2t3Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRREEKZnFVODhzaExGY3RWZWV0ZWxSc005ZnhkcVhtTjV3RlNtbVNZZ3g3WmlUc2FSbXM3WG1ORG5ibzJmeG1JQjUxcwpLVXB3WENPU1cvRE1yZm50QTYxQzNKaVRNMEZFbm5jVXNpUWlScW90S0k2dllPYWNJd28rQ3lJcUdzWVVNY2ZICmlsbU1ibjgyeVBPeDZ4enBmN0hmZWlqMnhOYmwrc1pZc2dRaGYwcWg1M2hOMDNsVUM1UlZqaUt5ZnRUa20wY3oKaDRSNFRmTHZTMmVzRWdvNFVEa290MDlsaEUzdlNhRmJGQmUvSEtpTCt5YzNnZkVnNDdzVjExbDh4KzViaTIweQptRks5ejhlRnBjcDNVYUtveEVvclBUOGNiL2wvdW5SWVVWNm5DdkNUOElXc3hjWlpERWxReVlVOFhmQ0NiRitwCm5lNmVKZ0pDYklQN0ZzY1ozMEVuQWdNQkFBR2pjREJ1TUE0R0ExVWREd0VCL3dRRUF3SUZvREFUQmdOVkhTVUUKRERBS0JnZ3JCZ0VGQlFjREFUQWZCZ05WSFNNRUdEQVdnQlFYczI5QTdtS0V5aFl2c2pZcnBMUFNwK3B2ampBbQpCZ05WSFJFRUh6QWRnZ2x2Y0dFdWJHOWpZV3lDRUhCc1lYbG5jbTkxYm1RdWJHOWpZV3d3RFFZSktvWklodmNOCkFRRUxCUUFEZ2dHQkFIajdtQjlGMGJiU05VNjkvdXMwT1dVSFUrZXJFK2ppWnhIUXRTRWpzdEVHYW5pbGJVNXkKeTNtOVNSUENlZ1VRQWR0ZVczWDIvR3lEMUhiTlp2Zk1BaXJ4L2ZCeDV3VW1CSDhsT3c2R3d4UW9wQXlvdHdiZApsdHlpYWNLZjVHOXFDZjdCOHVMMnZBdnhIZHlIOVhVUStsWGFBK0YyWGxKc0tDWFJHZGNtclhKY0lNd2J3cm9jCmcrbnlwVHpDWjdabHBvaG9IUXc2czJTdyt5RmpQL28rYjVqZXM1T0JsZmNUTnJPd2VtWUxERldXc3B0M3gzUnQKNitMVC9KcDFrUGZHN2JmS1U3R1A2K2pISzlFSjBabVU4MVEvTGc5bnlMSmkyNU5YNWR4dU5QTVJyNEhFS1FoWQpPSFdMSTFDR003STBUM0FvOGQ0T09BOFZTc090bXVlYnJ5SUhWNmxjTXhnSzdjM0NySlVqWkZBRkh0THJPajl2CnNCcUZJbzkrSm5yK2lMSlpiTXZZeThUbmpyS0xWS3BBL25FK0RYZzNDNHkxT0dhY205aUIzM3R3RU9vOGp5akwKTkh4NVhlRE1WRGFHYkNDeE5VdGtOcWk0TUZlejYzOVMyMzJNa3NaeG1uWXVIejlpRXh6ajVmVjhob0thZjN1UQoxd3BIOEx0WjBhelo2QT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRREFmcVU4OHNoTEZjdFYKZWV0ZWxSc005ZnhkcVhtTjV3RlNtbVNZZ3g3WmlUc2FSbXM3WG1ORG5ibzJmeG1JQjUxc0tVcHdYQ09TVy9ETQpyZm50QTYxQzNKaVRNMEZFbm5jVXNpUWlScW90S0k2dllPYWNJd28rQ3lJcUdzWVVNY2ZIaWxtTWJuODJ5UE94CjZ4enBmN0hmZWlqMnhOYmwrc1pZc2dRaGYwcWg1M2hOMDNsVUM1UlZqaUt5ZnRUa20wY3poNFI0VGZMdlMyZXMKRWdvNFVEa290MDlsaEUzdlNhRmJGQmUvSEtpTCt5YzNnZkVnNDdzVjExbDh4KzViaTIweW1GSzl6OGVGcGNwMwpVYUtveEVvclBUOGNiL2wvdW5SWVVWNm5DdkNUOElXc3hjWlpERWxReVlVOFhmQ0NiRitwbmU2ZUpnSkNiSVA3CkZzY1ozMEVuQWdNQkFBRUNnZ0VBVzlUUFBZbFJOa2phYlJleHlyaDFaRFNCeGFrUkhUcEVMa1VMa3BxVEFCSncKeUxNcGV2UW5oTjFkTlp4aThMczVSWjFaTHNzMkNSK2xlKy9QbUZ1MXIzMFBxTUc5OUY5b3pjM0NZVHUyK2I0cwplOHhObDlVN2tLZTlEN3NnSGdnMWw2TVAzMmZqZHA1ZGE5YVBQM0cweUxrOWk2UVNKVHNDbnRPbUZ0amtJT0k1ClNSRThvOTlyZjRPeE9BOVNMdkZOanBpK0NMZXlDeUN3QU9EZHNOYXhKRVpIRWJ3SmZHd3Ewc0VyUG9GSXVET28KSGNYRUowdEVQeFA2ZFRYMGx1MUZOTmlkV01lOFBPbDk1TE52eER1czZQdG8wanpZVUNyUlpuOHFpd09lTlhCdAp0QVZ2U29XYXBVcHdYZ2ppcEhzOEYwenh2Zy94dDV0RFpNcTVjbmtra1FLQmdRRFVwOWVZUTUvbURMc1F1STQxCnJDdisyNmNleVEzay90NlRUV2VWdFF2N2hHSHR4SjdWbEZkd3k2UDExbUJtdjhCNVdJRlRJWnpYWURQSllIVnQKaGNjOXJYb2JnYkJuVkFzamRVVUNKRlZwampWWTN1ckxDZlNJQUpkbU04aEFGRnBDSzlhZy9ualdiOE9jMTcxVQpOaWpIb05QZ2s0cHVsUGw4TGhPeEtBRFJYd0tCZ1FEbnV0T1NXZkRaT1NhbDVWV1dTUHlyaXVUYXd4Tmo5dWR4CjRRbVFKbURDanlPdFRYTnN4Z2hQMU1ob2RjKytKM2xYQWpBQWpGeXl0WlJyTnJGU24xMnZyOWhIcGhFOEhLRGsKcmREaURxMUhDbS91TDRWNHhFVm1EQzI5eGViQWdXNm9KZER5SFB4MW1TbjBXQUhya21FbDY4ZFdCK2lCYmhULwpxVlBWb2xNOU9RS0JnRXcwWFZqdUd0VzRpQ3lFeGtsTGluU0l5QW1MS05SLzFNamFleDAxeExaOENRL0lYdGJRCmtza1Q0SXlQSnZxTENuRXhteDVzTkNVbUQwakJyVEx6TnFQT2o2eGR2Qlk3RXNiQkZscWZKSkJ2Nm9RUFZmb3UKZGhkcWh0YVVCZFdZdFlOeTdEWERHeEJVK3Jjd3hHTHlDWWtJQkFVOU9lVklzMktockdMV24veG5Bb0dBRERzRgpIYTFYays5N1JiaEQreW1oQkdEUlVXYUlhSGRJb2U4UnRTVUJhR05ycTZMeDI2VGNIWEtLblZEU2hTUEtPTGhwCjFpMlNXdkJRaEJRZjZjOTFmMmRWai9xSTRGWldlNXRjOGdGNlRjeVVPY3NTVFZ4Mm1UczlVczNXTHdUbDFVUWgKc2hXcmtYMWpCSDE4cEhWV1lVei9lVi96ZXBsWHpHS2doUjhMSzZrQ2dZRUFySG81RnRYSm1wenM4MTk0Z1pkRwpreHh2bHZxb2JkbENRQk44N3Z4WXRRZlBQWStHeUZJNTdMSWIxcVNWV1UvMlpFU3FpMGlKRHBURzBpYjV4OHRUCmdKb09mYzB5NHVFTGpQdElRK28raGlZUHFOa3JwZW9BTnlmdDZRYitha2VEZ1RRTytvZ3BhLzhyZVAzMEZaUTAKRW1jNlFZK0F0M1M1bjJkSFlnemdiY0E9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
-
----
-# =====================================================================
-# 3. OPA ConfigMap
-#    This enables the standard OPA REST API + optional envoy authz port.
-#    Feel free to customize bundles, policies, etc.
+# 2. OPA ConfigMap
 # =====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -45,10 +28,7 @@ data:
 
 ---
 # =====================================================================
-# 4. OPA Deployment
-#    - Runs OPA in server mode
-#    - Loads config from the ConfigMap
-#    - Exposes REST API on port 8181 internally
+# 3. OPA Deployment
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -73,7 +53,7 @@ spec:
             - "--server"
             - "--config-file=/config/opa.yaml"
           ports:
-            - containerPort: 8181  # OPA REST API
+            - containerPort: 8181
           volumeMounts:
             - name: opa-config
               mountPath: /config
@@ -84,8 +64,7 @@ spec:
 
 ---
 # =====================================================================
-# 5. OPA Service
-#    Traefik will route external HTTPS traffic to this service.
+# 4. OPA Service
 # =====================================================================
 apiVersion: v1
 kind: Service
@@ -102,27 +81,15 @@ spec:
 
 ---
 # =====================================================================
-# 6. Kubernetes Ingress (for Rancher Desktop / built-in Traefik)
-#    - Uses Traefik CRDs (apiVersion: traefik.io/v1alpha1)
-#    - Binds to the websecure entrypoint (443)
-#    - Terminates TLS using the provided certificate
-#    - Routes traffic to OPA’s Service
-#
-#    ACCESS URL:
-#      https://opa.local/
-#
-#    For this to work:
-#      - Traefik must be installed with CRDs
-#      - Your DNS or /etc/hosts must resolve opa.local
+# 5. Kubernetes Ingress for Rancher Desktop Traefik
 # =====================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: opa-ingress
   namespace: opa
-  annotations:
-    kubernetes.io/ingress.class: "traefik"  # tells Traefik to manage this ingress
 spec:
+  ingressClassName: traefik
   tls:
     - hosts:
         - opa.local
