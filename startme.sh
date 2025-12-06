@@ -5,16 +5,16 @@
 
 kubectl create namespace opa
 
-kubectl create secret tls opa-tls-secret \
-  --cert=opa.local.pem \
-  --key=opa.local-key.pem \
-  -n opa \
-  --dry-run=client -o yaml > opa-tls-secret.yaml
+# kubectl create secret tls opa-tls-secret \
+#   --cert=opa.local.pem \
+#   --key=opa.local-key.pem \
+#   -n opa \
+#   --dry-run=client -o yaml > opa-tls-secret.yaml
 
 kubectl apply -f opa-tls-secret.yaml
 # kubectl apply -f opa.yaml
 
-kubectl logs deployment/opa -n opa
+# kubectl logs deployment/opa -n opa
 
 # kubectl apply -f opa-policies-configmap.yaml
 # kubectl rollout restart deployment/opa -n opa
