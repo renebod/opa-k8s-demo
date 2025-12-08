@@ -65,9 +65,12 @@ spec:
                   f="$1"
                   name=$(basename "$f")
                   echo "[Reloader] Uploading policy: $name"
-                  response=$(curl -s -w "%{http_code}" -o /tmp/resp.txt -X PUT --data-binary @"$f" http://opa.opa.svc.cluster.local:8181/v1/policies/$name)
-                  if [ "$response" -ne 200 ]; then
-                      echo "[Reloader] ERROR uploading $name: $(cat /tmp/resp.txt)"
+
+                  # Curl PUT to OPA; capture output and status code
+                  http_code=$(curl -s -o >(cat) -w "%{http_code}" -X PUT --data-binary @"$f" http://opa.opa.svc.cluster.local:8181/v1/policies/$name)
+
+                  if [ "$http_code" -ne 200 ]; then
+                      echo "[Reloader] ERROR uploading $name: HTTP code $http_code"
                   else
                       echo "[Reloader] Successfully loaded $name"
                   fi
