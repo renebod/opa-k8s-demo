@@ -14,6 +14,8 @@ kubectl create namespace opa
 kubectl apply -f opa-tls-secret.yaml
 kubectl apply -f opa-full.yaml
 
+kubectl apply -f opa-policies-with-hotreload.yaml
+
 # kubectl logs deployment/opa -n opa
 
 # kubectl apply -f opa-policies-configmap.yaml

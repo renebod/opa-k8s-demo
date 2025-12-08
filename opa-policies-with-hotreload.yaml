@@ -1,0 +1,82 @@
+# =====================================================================
+# 1. Policies ConfigMap — Separate file
+# opa-policies-with-hotreload.yaml
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies-src
+  namespace: opa
+data:
+  allow.rego: |
+    package example.allow
+    default allow = false
+    allow {
+      input.user == "admin"
+    }
+
+  deny.rego: |
+    package example.deny
+    default deny = false
+    deny {
+      input.block == true
+    }
+
+  validate.rego: |
+    package example.validate
+    valid {
+      input.value > 0
+    }
+
+---
+# =====================================================================
+# 2. Hot Reload Sidecar (standalone Pod)
+#    Watches rego files and pushes into existing OPA via REST API
+# =====================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa-policy-reloader
+  namespace: opa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa-policy-reloader
+  template:
+    metadata:
+      labels:
+        app: opa-policy-reloader
+    spec:
+      containers:
+        - name: policy-reloader
+          image: alpine:3.19
+          command: ["sh", "-c"]
+          args:
+            - |
+              apk add --no-cache inotify-tools curl
+
+              echo "[Reloader] Initial upload..."
+              for f in /policies-src/*.rego; do
+                name=$(basename $f)
+                curl -s -X PUT --data-binary @"$f" \
+                  http://opa.opa.svc.cluster.local:8181/v1/policies/$name
+              done
+
+              echo "[Reloader] Watching for changes..."
+              while true; do
+                inotifywait -e modify,create,delete /policies-src
+                echo "[Reloader] Change detected — reloading..."
+                for f in /policies-src/*.rego; do
+                  name=$(basename $f)
+                  curl -s -X PUT --data-binary @"$f" \
+                    http://opa.opa.svc.cluster.local:8181/v1/policies/$name
+                done
+              done
+          volumeMounts:
+            - name: policies-src
+              mountPath: /policies-src
+      volumes:
+        - name: policies-src
+          configMap:
+            name: opa-policies-src
