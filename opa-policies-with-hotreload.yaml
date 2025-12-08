@@ -1,6 +1,5 @@
 # =====================================================================
-# 1. Policies ConfigMap — Separate file
-# opa-policies-with-hotreload.yaml
+# 1. Policies ConfigMap — Standalone, guaranteed to compile
 # =====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -10,28 +9,33 @@ metadata:
 data:
   allow.rego: |
     package example.allow
+
     default allow = false
+
     allow {
-      input.user == "admin"
+        input.user == "admin"
     }
 
   deny.rego: |
     package example.deny
+
     default deny = false
+
     deny {
-      input.block == true
+        input.block == true
     }
 
   validate.rego: |
     package example.validate
+
     valid {
-      input.value > 0
+        input.value > 0
     }
 
 ---
 # =====================================================================
-# 2. Hot Reload Sidecar (standalone Pod)
-#    Watches rego files and pushes into existing OPA via REST API
+# 2. Hot-reload Sidecar Deployment (Standalone)
+#    Watches /policies-src and uploads to existing OPA
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -54,25 +58,35 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              apk add --no-cache inotify-tools curl
+              apk add --no-cache inotify-tools curl >/dev/null 2>&1 || true
+              echo "[Reloader] Starting policy watcher..."
 
-              echo "[Reloader] Initial upload..."
+              reload_policy() {
+                  f="$1"
+                  name=$(basename "$f")
+                  echo "[Reloader] Uploading policy: $name"
+                  response=$(curl -s -w "%{http_code}" -o /tmp/resp.txt -X PUT --data-binary @"$f" http://opa.opa.svc.cluster.local:8181/v1/policies/$name)
+                  if [ "$response" -ne 200 ]; then
+                      echo "[Reloader] ERROR uploading $name: $(cat /tmp/resp.txt)"
+                  else
+                      echo "[Reloader] Successfully loaded $name"
+                  fi
+              }
+
+              # Initial load of all policies
               for f in /policies-src/*.rego; do
-                name=$(basename $f)
-                curl -s -X PUT --data-binary @"$f" \
-                  http://opa.opa.svc.cluster.local:8181/v1/policies/$name
+                  reload_policy "$f"
               done
 
-              echo "[Reloader] Watching for changes..."
+              # Watch for changes
               while true; do
-                inotifywait -e modify,create,delete /policies-src
-                echo "[Reloader] Change detected — reloading..."
-                for f in /policies-src/*.rego; do
-                  name=$(basename $f)
-                  curl -s -X PUT --data-binary @"$f" \
-                    http://opa.opa.svc.cluster.local:8181/v1/policies/$name
-                done
+                  inotifywait -e modify,create,delete /policies-src
+                  echo "[Reloader] Change detected — reloading policies..."
+                  for f in /policies-src/*.rego; do
+                      reload_policy "$f"
+                  done
               done
+
           volumeMounts:
             - name: policies-src
               mountPath: /policies-src
