@@ -1,0 +1,29 @@
+# =====================================================================
+# Policies ConfigMap — Standalone file
+# opa-policies.yaml
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: opa
+data:
+  allow.rego: |
+    package example.allow
+    default allow = false
+    allow {
+      input.user == "admin"
+    }
+
+  deny.rego: |
+    package example.deny
+    default deny = false
+    deny {
+      input.block == true
+    }
+
+  validate.rego: |
+    package example.validate
+    valid {
+      input.value > 0
+    }

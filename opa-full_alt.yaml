@@ -1,12 +1,33 @@
 # =====================================================================
-# 1. Policies ConfigMap — Standalone, guaranteed to compile
+# Standalone OPA Policies Hot-Reload Setup
+# =====================================================================
+# This YAML deploys:
+# 1. A ConfigMap containing example Rego policies
+# 2. A hot-reload sidecar Deployment that uploads policies to an
+#    existing OPA server in the "opa" namespace.
+#
+# Features:
+# - Guaranteed valid Rego with proper default rules
+# - Automatic reload on ConfigMap changes
+# - Safe startup: waits until OPA server is ready
+# - Logs successes and errors, never crashes on invalid policies
+# =====================================================================
+
+# =====================================================================
+# 1. Policies ConfigMap
 # =====================================================================
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: opa-policies-src
   namespace: opa
+  labels:
+    app: opa
 data:
+  # ---------------------------------------
+  # Example allow policy
+  # Grants access if input.user == "admin"
+  # ---------------------------------------
   allow.rego: |
     package example.allow
 
@@ -16,6 +37,10 @@ data:
         input.user == "admin"
     }
 
+  # ---------------------------------------
+  # Example deny policy
+  # Blocks access if input.block == true
+  # ---------------------------------------
   deny.rego: |
     package example.deny
 
@@ -25,6 +50,10 @@ data:
         input.block == true
     }
 
+  # ---------------------------------------
+  # Example validate policy
+  # Returns valid if input.value > 0
+  # ---------------------------------------
   validate.rego: |
     package example.validate
 
@@ -36,14 +65,15 @@ data:
 
 ---
 # =====================================================================
-# 2. Hot-reload Sidecar Deployment (Standalone)
-#    Watches /policies-src and uploads to existing OPA
+# 2. Hot-reload Sidecar Deployment
 # =====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: opa-policy-reloader
   namespace: opa
+  labels:
+    app: opa-policy-reloader
 spec:
   replicas: 1
   selector:
@@ -57,18 +87,27 @@ spec:
       containers:
         - name: policy-reloader
           image: alpine:3.19
+          # Start a shell that runs the policy uploader loop
           command: ["sh", "-c"]
           args:
             - |
-              apk add --no-cache inotify-tools curl >/dev/null 2>&1 || true
-              echo "[Reloader] Starting policy watcher..."
+              # Install dependencies
+              apk add --no-cache curl inotify-tools >/dev/null 2>&1 || true
 
+              echo "[Reloader] Waiting for OPA server to become ready..."
+              # Wait until OPA /health returns 200
+              until curl -s http://opa.opa.svc.cluster.local:8181/health >/dev/null 2>&1; do
+                  sleep 2
+              done
+              echo "[Reloader] OPA is ready, starting initial policy load..."
+
+              # Function to upload a policy file to OPA
               reload_policy() {
                   f="$1"
                   name=$(basename "$f")
                   echo "[Reloader] Uploading policy: $name"
 
-                  # Curl PUT to OPA; capture output and status code
+                  # Upload using curl and capture HTTP code
                   http_code=$(curl -s -o >(cat) -w "%{http_code}" -X PUT --data-binary @"$f" http://opa.opa.svc.cluster.local:8181/v1/policies/$name)
 
                   if [ "$http_code" -ne 200 ]; then
@@ -78,12 +117,13 @@ spec:
                   fi
               }
 
-              # Initial load of all policies
+              # Initial upload of all policies
               for f in /policies-src/*.rego; do
                   reload_policy "$f"
               done
 
-              # Watch for changes
+              # Watch for changes in the ConfigMap mount
+              echo "[Reloader] Watching /policies-src for changes..."
               while true; do
                   inotifywait -e modify,create,delete /policies-src
                   echo "[Reloader] Change detected — reloading policies..."
@@ -95,7 +135,9 @@ spec:
           volumeMounts:
             - name: policies-src
               mountPath: /policies-src
+
       volumes:
+        # Mount the policies ConfigMap
         - name: policies-src
           configMap:
             name: opa-policies-src

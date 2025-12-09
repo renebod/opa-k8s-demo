@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: opa
+spec:
+  template:
+    spec:
+      volumes:
+        - name: rego-files
+          hostPath:
+            path: /Users/renebod/opa-policies
+            type: DirectoryOrCreate
+
+      containers:
+        # ------------------------------
+        # 1. OPA Container (patched)
+        # ------------------------------
+        - name: opa
+          volumeMounts:
+            - name: rego-files
+              mountPath: /policies
+          args:
+            - "run"
+            - "--server"
+            - "--addr=0.0.0.0:8181"
+            - "--config-file=/config/opa.yaml"
+            - "/policies"
+
+        # ------------------------------
+        # 2. Sidecar for Rego sync
+        # ------------------------------
+        - name: rego-sync
+          image: alpine:3
+          command: ["sh", "-c", "while true; do sleep 3600; done"]
+          volumeMounts:
+            - name: rego-files
+              mountPath: /policies
